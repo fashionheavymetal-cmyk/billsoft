@@ -161,38 +161,42 @@ app = FastAPI(
     version="1.0.0"
 )
 
-# Custom CORS middleware — handles everything including errors
-# We do NOT use FastAPI's CORSMiddleware because it conflicts with Vercel serverless
-@app.middleware("http")
-async def add_cors_headers(request: Request, call_next):
-    # Handle preflight OPTIONS requests
-    if request.method == "OPTIONS":
-        return JSONResponse(
-            content="OK",
-            status_code=200,
-            headers={
-                "Access-Control-Allow-Origin": "*",
-                "Access-Control-Allow-Methods": "GET, POST, PUT, DELETE, OPTIONS",
-                "Access-Control-Allow-Headers": "Content-Type, Authorization",
-                "Access-Control-Max-Age": "86400",
-            },
-        )
-    
-    # Process the actual request
-    try:
-        response = await call_next(request)
-    except Exception as e:
-        # Even on errors, return CORS headers
-        response = JSONResponse(
-            content={"detail": str(e)},
-            status_code=500,
-        )
-    
-    # Add CORS headers to EVERY response
-    response.headers["Access-Control-Allow-Origin"] = "*"
-    response.headers["Access-Control-Allow-Methods"] = "GET, POST, PUT, DELETE, OPTIONS"
-    response.headers["Access-Control-Allow-Headers"] = "Content-Type, Authorization"
-    return response
+# CORS middleware
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],
+    allow_credentials=False,
+    allow_methods=["*"],
+    allow_headers=["*"],
+    expose_headers=["*"],
+)
+
+# Exception handlers that include CORS headers (CORSMiddleware doesn't cover error responses)
+@app.exception_handler(HTTPException)
+async def http_exception_handler(request: Request, exc: HTTPException):
+    return JSONResponse(
+        status_code=exc.status_code,
+        content={"detail": exc.detail},
+        headers={
+            "Access-Control-Allow-Origin": "*",
+            "Access-Control-Allow-Methods": "GET, POST, PUT, DELETE, OPTIONS",
+            "Access-Control-Allow-Headers": "Content-Type, Authorization",
+        },
+    )
+
+@app.exception_handler(Exception)
+async def general_exception_handler(request: Request, exc: Exception):
+    import traceback
+    traceback.print_exc()
+    return JSONResponse(
+        status_code=500,
+        content={"detail": f"Internal server error: {str(exc)}"},
+        headers={
+            "Access-Control-Allow-Origin": "*",
+            "Access-Control-Allow-Methods": "GET, POST, PUT, DELETE, OPTIONS",
+            "Access-Control-Allow-Headers": "Content-Type, Authorization",
+        },
+    )
 
 # ============================================
 # Pydantic Models
