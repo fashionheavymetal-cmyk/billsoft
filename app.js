@@ -421,16 +421,20 @@ async function loadDashboardData() {
             data = calculateLocalDashboard();
         }
 
-        document.getElementById('stat-revenue').textContent = formatCurrency(data.total_revenue || 0);
-        document.getElementById('stat-pending').textContent = formatCurrency(data.pending_amount || 0);
-        document.getElementById('stat-overdue').textContent = formatCurrency(data.overdue_amount || 0);
-        document.getElementById('stat-customers').textContent = data.customer_count || 0;
-        document.getElementById('stat-total-invoices').textContent = data.total_invoices || 0;
-        document.getElementById('stat-paid-count').textContent = data.paid_count || 0;
-        document.getElementById('stat-pending-count').textContent = data.pending_count || 0;
-        document.getElementById('stat-products').textContent = data.product_count || 0;
+        // Guard against DOM elements being removed (e.g. user navigated away)
+        const el = (id) => document.getElementById(id);
+        if (!el('stat-revenue')) return; // Dashboard no longer visible
 
-        const recentContainer = document.getElementById('recent-invoices-table');
+        el('stat-revenue').textContent = formatCurrency(data.total_revenue || 0);
+        el('stat-pending').textContent = formatCurrency(data.pending_amount || 0);
+        el('stat-overdue').textContent = formatCurrency(data.overdue_amount || 0);
+        el('stat-customers').textContent = data.customer_count || 0;
+        el('stat-total-invoices').textContent = data.total_invoices || 0;
+        el('stat-paid-count').textContent = data.paid_count || 0;
+        el('stat-pending-count').textContent = data.pending_count || 0;
+        el('stat-products').textContent = data.product_count || 0;
+
+        const recentContainer = el('recent-invoices-table');
         const recentInvoices = data.recent_invoices || [];
 
         if (recentInvoices.length === 0) {
