@@ -363,6 +363,49 @@ async def api_root():
         "endpoints": ["/api/health", "/api/auth/google", "/api/customers", "/api/products", "/api/invoices", "/api/dashboard"]
     }
 
+@app.get("/api/debug")
+async def debug_endpoint(authorization: str = Header(None)):
+    """Debug endpoint to test auth + Supabase pipeline."""
+    import traceback
+    result = {"steps": []}
+    
+    # Step 1: Check env vars
+    result["steps"].append({
+        "step": "env_vars",
+        "supabase_url": bool(SUPABASE_URL),
+        "supabase_key": bool(SUPABASE_KEY),
+        "google_client_id": bool(GOOGLE_CLIENT_ID),
+    })
+    
+    # Step 2: Test auth
+    try:
+        user_info = await get_current_user(authorization)
+        result["steps"].append({"step": "auth", "status": "ok", "user": user_info})
+    except HTTPException as e:
+        result["steps"].append({"step": "auth", "status": "error", "detail": e.detail, "code": e.status_code})
+        return result
+    except Exception as e:
+        result["steps"].append({"step": "auth", "status": "error", "detail": str(e), "traceback": traceback.format_exc()})
+        return result
+    
+    # Step 3: Test Supabase connection
+    try:
+        supabase = get_supabase()
+        result["steps"].append({"step": "supabase_client", "status": "ok"})
+    except Exception as e:
+        result["steps"].append({"step": "supabase_client", "status": "error", "detail": str(e), "traceback": traceback.format_exc()})
+        return result
+    
+    # Step 4: Test user lookup
+    try:
+        db_result = supabase.table("users").select("id").eq("google_id", user_info["google_id"]).execute()
+        result["steps"].append({"step": "user_lookup", "status": "ok", "found": bool(db_result.data), "data": db_result.data})
+    except Exception as e:
+        result["steps"].append({"step": "user_lookup", "status": "error", "detail": str(e), "traceback": traceback.format_exc()})
+        return result
+    
+    return result
+
 @app.get("/api/health")
 async def health_check():
     return {"status": "healthy", "service": "BillSoft API", "version": "1.0.0"}
