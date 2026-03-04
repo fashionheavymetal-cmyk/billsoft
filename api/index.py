@@ -342,7 +342,7 @@ async def root():
         "service": "BillSoft API",
         "version": "1.0.0",
         "status": "running",
-        "frontend": "https://softbilling.netlify.app",
+        "frontend": "https://softbillingnet.netlify.app",
         "docs": "/api/health"
     }
 
