@@ -328,6 +328,25 @@ async def get_user_id(authorization: str = Header(None)):
 # ============================================
 # API Routes - Health
 # ============================================
+@app.get("/")
+async def root():
+    return {
+        "service": "BillSoft API",
+        "version": "1.0.0",
+        "status": "running",
+        "frontend": "https://softbilling.netlify.app",
+        "docs": "/api/health"
+    }
+
+@app.get("/api")
+async def api_root():
+    return {
+        "service": "BillSoft API",
+        "version": "1.0.0",
+        "status": "running",
+        "endpoints": ["/api/health", "/api/auth/google", "/api/customers", "/api/products", "/api/invoices", "/api/dashboard"]
+    }
+
 @app.get("/api/health")
 async def health_check():
     return {"status": "healthy", "service": "BillSoft API", "version": "1.0.0"}
