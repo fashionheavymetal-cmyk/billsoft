@@ -28,10 +28,10 @@ except ImportError:
 # ============================================
 # Configuration
 # ============================================
-SUPABASE_URL = os.getenv("SUPABASE_URL", "")
-SUPABASE_KEY = os.getenv("SUPABASE_KEY", "")
-GOOGLE_CLIENT_ID = os.getenv("GOOGLE_CLIENT_ID", "")
-FRONTEND_URL = os.getenv("FRONTEND_URL", "http://localhost:5500")
+SUPABASE_URL = os.getenv("SUPABASE_URL", "").strip()
+SUPABASE_KEY = os.getenv("SUPABASE_KEY", "").strip()
+GOOGLE_CLIENT_ID = os.getenv("GOOGLE_CLIENT_ID", "").strip()
+FRONTEND_URL = os.getenv("FRONTEND_URL", "http://localhost:5500").strip()
 
 # ============================================
 # Supabase Client
