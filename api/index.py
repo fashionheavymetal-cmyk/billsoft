@@ -170,17 +170,25 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# Explicit preflight handler — Vercel serverless may not forward OPTIONS to middleware
-@app.options("/{path:path}")
-async def preflight_handler(path: str):
-    return JSONResponse(
-        content="OK",
-        headers={
-            "Access-Control-Allow-Origin": "*",
-            "Access-Control-Allow-Methods": "GET, POST, PUT, DELETE, OPTIONS",
-            "Access-Control-Allow-Headers": "Content-Type, Authorization",
-        },
-    )
+# Custom middleware to ensure CORS headers on EVERY response (including errors)
+# Vercel serverless may not always apply FastAPI's CORSMiddleware correctly
+@app.middleware("http")
+async def add_cors_headers(request: Request, call_next):
+    if request.method == "OPTIONS":
+        return JSONResponse(
+            content="OK",
+            headers={
+                "Access-Control-Allow-Origin": "*",
+                "Access-Control-Allow-Methods": "GET, POST, PUT, DELETE, OPTIONS",
+                "Access-Control-Allow-Headers": "Content-Type, Authorization",
+                "Access-Control-Max-Age": "86400",
+            },
+        )
+    response = await call_next(request)
+    response.headers["Access-Control-Allow-Origin"] = "*"
+    response.headers["Access-Control-Allow-Methods"] = "GET, POST, PUT, DELETE, OPTIONS"
+    response.headers["Access-Control-Allow-Headers"] = "Content-Type, Authorization"
+    return response
 
 # ============================================
 # Pydantic Models
