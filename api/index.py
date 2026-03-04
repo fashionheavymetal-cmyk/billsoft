@@ -161,22 +161,15 @@ app = FastAPI(
     version="1.0.0"
 )
 
-# CORS — use wildcard for Vercel serverless compatibility
-app.add_middleware(
-    CORSMiddleware,
-    allow_origins=["*"],
-    allow_credentials=False,
-    allow_methods=["*"],
-    allow_headers=["*"],
-)
-
-# Custom middleware to ensure CORS headers on EVERY response (including errors)
-# Vercel serverless may not always apply FastAPI's CORSMiddleware correctly
+# Custom CORS middleware — handles everything including errors
+# We do NOT use FastAPI's CORSMiddleware because it conflicts with Vercel serverless
 @app.middleware("http")
 async def add_cors_headers(request: Request, call_next):
+    # Handle preflight OPTIONS requests
     if request.method == "OPTIONS":
         return JSONResponse(
             content="OK",
+            status_code=200,
             headers={
                 "Access-Control-Allow-Origin": "*",
                 "Access-Control-Allow-Methods": "GET, POST, PUT, DELETE, OPTIONS",
@@ -184,7 +177,18 @@ async def add_cors_headers(request: Request, call_next):
                 "Access-Control-Max-Age": "86400",
             },
         )
-    response = await call_next(request)
+    
+    # Process the actual request
+    try:
+        response = await call_next(request)
+    except Exception as e:
+        # Even on errors, return CORS headers
+        response = JSONResponse(
+            content={"detail": str(e)},
+            status_code=500,
+        )
+    
+    # Add CORS headers to EVERY response
     response.headers["Access-Control-Allow-Origin"] = "*"
     response.headers["Access-Control-Allow-Methods"] = "GET, POST, PUT, DELETE, OPTIONS"
     response.headers["Access-Control-Allow-Headers"] = "Content-Type, Authorization"
